@@ -4,7 +4,7 @@ Instructions:
 Drag a .as file onto the program to load it.
 Make sure that python is installed and that the python command in the command line works correctly.
 Press control+s or f5 to save the assembly code and assemble and load the bytecode,
-Assembled bytecode is stored in the same directory as the .as file but with a .mc extension.
+Assembled bytecode is stored in the same directory as the .as file but with a .bin extension.
 
 Controls:
 Make sure text editor is not focused.

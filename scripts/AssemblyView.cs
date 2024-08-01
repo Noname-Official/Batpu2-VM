@@ -23,10 +23,13 @@ public partial class AssemblyView : CodeEdit
 
     private List<int> codeLines;
 
-    private List<string> instructions = new List<string> {"NOP", "HLT", "ADD", "SUB", "NOR", "AND", "XOR", "RSH", "LDI", "ADI", "JMP", "BRH", "CAL", "RET", "LOD", "STR", "CMP", "MOV", "LSH", "INC", "DEC", "NOT"};
-    private List<string> conditions = new List<string> {"eq", "ne", "ge", "lt", "=", "!=", ">=", "<", "z", "nz", "c", "nc", "zero", "notzero", "carry", "notcarry"};
+    private List<string> instructions = new List<string> { "NOP", "HLT", "ADD", "SUB", "NOR", "AND", "XOR", "RSH", "LDI", "ADI", "JMP", "BRH", "CAL", "RET", "LOD", "STR" };
+    private List<string> conditions = new List<string> { "eq", "ne", "ge", "lt", "=", "!=", ">=", "<", "z", "nz", "c", "nc", "zero", "notzero", "carry", "notcarry" };
 
-    public bool initialized {get; private set;}
+    // Name to lines
+    private Dictionary<string, List<int>> macroCodeLines = new Dictionary<string, List<int>>();
+
+    public bool initialized { get; private set; }
 
     public int programCounter;
 
@@ -60,8 +63,6 @@ public partial class AssemblyView : CodeEdit
             file.Close();
         }
         LoadAssembly(assemblyPath);
-        Assembler.Assemble(assemblyPath, assemblyPath[..^3] + ".mc");
-        main.LoadProgram(new string[]{assemblyPath[..^3] + ".mc"});
     }
 
     public override void _Ready()
@@ -69,7 +70,7 @@ public partial class AssemblyView : CodeEdit
         CodeHighlighter highlighter = SyntaxHighlighter as CodeHighlighter;
         highlighter.AddColorRegion("//", "", commentColor, true);
         //highlighter.AddColorRegion("\"", "\"", stringColor, true);
-        for(int i = 0; i < 16; i++)
+        for (int i = 0; i < 16; i++)
         {
             highlighter.AddKeywordColor("r" + i, registerColor);
         }
@@ -111,43 +112,79 @@ public partial class AssemblyView : CodeEdit
     {
         assemblyPath = assembly_filename;
 
-        filenameDisplay.Text = "Editing " + Path.GetFileName(assembly_filename);
-        
+        filenameDisplay.Text = "Editing " + assembly_filename;
+
         string assembly;
-        try 
+        try
         {
             assembly = Godot.FileAccess.GetFileAsString(assembly_filename);
-        } catch
+        }
+        catch
         {
             GD.Print("assembly failed to load");
             return;
         }
 
         string text = "";
+        string macro = null;
         codeLines = new List<int>();
         int lineNum = 0;
         int pc = 0;
-        using (StringReader sr = new StringReader(assembly)) {
+        using (StringReader sr = new StringReader(assembly))
+        {
             string line;
-            while ((line = sr.ReadLine()) != null) {
+            while ((line = sr.ReadLine()) != null)
+            {
                 line = line.Trim();
 
-                int comment = line.IndexOfAny(new char[]{'/', ';', '#'});
+                if (line.ToUpper().StartsWith("MACRO "))
+                {
+                    macro = line.ToUpper().TrimPrefix("MACRO ").Trim().Split()[0];
+                    macroCodeLines[macro] = new List<int>();
+                }
+
+                if (line.ToUpper().StartsWith("ENDM"))
+                {
+                    macro = null;
+                }
+
+                int comment = line.IndexOfAny(new char[] { '/', ';', '#' });
                 if (comment != -1) line = line[..comment];
 
                 int labelStart = line.IndexOf('.');
-                if (labelStart == 0) 
+                if (labelStart == 0)
                 {
-                    int labelEnd = line.IndexOfAny(new char[]{' ', '\t'});
+                    int labelEnd = line.IndexOfAny(new char[] { ' ', '\t' });
                     if (labelEnd != -1) line = line[labelEnd..];
                     else line = "";
                 }
 
-                if (instructions.Any(line.ToUpper().Contains))
+                string mnemonic = line.Split(" ")[0].ToUpper();
+                if (instructions.Contains(mnemonic) || macroCodeLines.ContainsKey(mnemonic))
                 {
-                    codeLines.Add(lineNum);
-                    text += " " + padString("" + pc, 4, "0");
-                    pc++;
+                    if (macro == null)
+                        text += " " + padString("" + pc, 4, "0");
+
+                    if (instructions.Contains(mnemonic))
+                    {
+                        if (macro == null)
+                        {
+                            codeLines.Add(lineNum);
+                            pc++;
+                        }
+                        else
+                            macroCodeLines[macro].Add(lineNum);
+                    }
+                    else
+                    {
+                        if (macro == null)
+                        {
+                            codeLines.AddRange(macroCodeLines[mnemonic]);
+                            pc += macroCodeLines[mnemonic].Count;
+                        }
+                        else
+                            macroCodeLines[macro].AddRange(macroCodeLines[mnemonic]);
+                    }
                 }
                 text += "\n";
                 lineNum++;
@@ -159,16 +196,18 @@ public partial class AssemblyView : CodeEdit
         initialized = true;
         Editable = true;
 
-        Assemble(assemblyPath, assemblyPath[..^3] + ".mc");
-        main.LoadProgram(new string[]{assemblyPath[..^3] + ".mc"});
+        Assemble(assemblyPath);
     }
 
-    private void Assemble(string inputPath, string outputPath)
+    private void Assemble(string path)
     {
-        string result = Assembler.Assemble(inputPath, outputPath);
-        if (result == "") return;
-        errorToggle.Visible = true;
-        errorDisplay.Text = result;
+        string result = Assembler.Assemble(path);
+        if (result != "")
+        {
+            errorToggle.Visible = true;
+            errorDisplay.Text = result;
+        }
+        main.LoadProgram(new string[] { assemblyPath.GetBaseName() + ".bin" });
     }
 
     public void HideError()

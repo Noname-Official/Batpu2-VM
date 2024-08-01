@@ -150,16 +150,16 @@ public partial class Display : Node
     }
 
     public static string PadWithUnderscores(string inputString)
-{
-  if (inputString == null)
-  {
-    throw new ArgumentNullException(nameof(inputString));
-  }
+    {
+        if (inputString == null)
+        {
+            throw new ArgumentNullException(nameof(inputString));
+        }
 
-  int targetLength = 20;
-  int padLength = targetLength - inputString.Length;
-  return padLength > 0 ? inputString.PadRight(targetLength, '_') : inputString;
-}
+        int targetLength = 20;
+        int padLength = targetLength - inputString.Length;
+        return padLength > 0 ? inputString.PadRight(targetLength, '_') : inputString;
+    }
 
     public byte LoadPort(byte port)
     {
@@ -186,7 +186,7 @@ public partial class Display : Node
         bool select = Input.IsActionPressed("select");
         bool a = Input.IsActionPressed("a");
         bool b = Input.IsActionPressed("b");
-        bool[] inputs = new bool[] {start, select, a, b, up, right, down, left};
+        bool[] inputs = new bool[] { start, select, a, b, up, right, down, left };
         return ToByte(inputs);
     }
 

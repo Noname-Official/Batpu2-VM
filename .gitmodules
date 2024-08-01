@@ -1,3 +1,3 @@
 [submodule "assembler"]
 	path = assembler
-	url = https://github.com/mattbatwings/newcpu
+	url = https://github.com/Noname-Official/newcpu

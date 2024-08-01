@@ -46,7 +46,7 @@ public partial class Main : Node
 
     private bool zeroFlag = false;
     private bool carryFlag = false;
-    private String[] inputs = {"Y", "T", "J", "K", "W", "D", "S", "A"};
+    private string[] inputs = { "Y", "T", "J", "K", "W", "D", "S", "A" };
 
     public override void _Ready()
     {
@@ -143,7 +143,7 @@ public partial class Main : Node
             case 0: programCounter++; break;
             //HLT
             case 1:
-                if (!paused) StartStop(); 
+                if (!paused) StartStop();
                 break;
             //ADD
             case 2:
@@ -261,7 +261,7 @@ public partial class Main : Node
     private void Step()
     {
         if (!paused) StartStop();
-        if (paused && bytecode != null) 
+        if (paused && bytecode != null)
         {
             RunNextInstruction();
             assemblyView.follow = true;
@@ -284,24 +284,20 @@ public partial class Main : Node
 
     public void LoadProgram(string[] files)
     {
-        if (files[0].LastIndexOf(".mc") != -1)
+        if (files[0].GetExtension() == "bin")
         {
             Reset();
             try
             {
-                var code = FileAccess.GetFileAsString(files[0]);
-                code = Regex.Replace(code, @"\t|\n|\r", "");
-                bytecode = ConvertBinaryStringToByteArray(code);
-
+                bytecode = FileAccess.GetFileAsBytes(files[0]);
                 //StatusLabel.Text = "Program Loaded";
-
-                
-            } catch
+            }
+            catch
             {
                 //StatusLabel.Text = "Failed to Load Program";
             }
         }
-        else if (files[0].LastIndexOf(".as") != -1)
+        else
         {
             assemblyView.LoadAssembly(files[0]);
         }
@@ -331,7 +327,7 @@ public partial class Main : Node
         MemoryDisplay.Text = text;
         //text = BitConverter.ToString(ports).Replace("-", " ");
         //PortDisplay.Text = text;
-        if (assemblyView.initialized) 
+        if (assemblyView.initialized)
         {
             assemblyView.programCounter = programCounter;
             assemblyView.MoveCursor();
